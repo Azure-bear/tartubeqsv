@@ -753,16 +753,35 @@ class ProcessManager(threading.Thread):
                 ),
             )
 
+            +        enc = self.options_obj.options_dict['gpu_encoding']
+        if enc.endswith('_qsv'):
+            # Hardware‐accelerated re‐encode via Intel QSV
+            qsv_map = {
+                'ultrafast':'performance','superfast':'performance',
+                'veryfast':'balanced','fast':'balanced','medium':'balanced',
+                'slow':'quality','slower':'quality','veryslow':'quality'
+            }
+            qp = qsv_map.get(self.options_obj.options_dict['patience_preset'], 'default')
+
             cmd_list = [
                 self.app_obj.ffmpeg_manager_obj.get_executable(),
-                '-safe',
-                '0',
-                '-f',
-                'concat',
-                '-i',
-                clips_file,
-                '-c',
-                'copy',
+                '-safe','0',
+                '-f','concat',
+                '-i', clips_file,
+                '-hwaccel','qsv',
+                '-c:v', enc,
+                '-preset', qp,
+                '-c:a', 'copy',
+                output_path,
+            ]
+        else:
+            # Original lossless join
+            cmd_list = [
+                self.app_obj.ffmpeg_manager_obj.get_executable(),
+                '-safe','0',
+                '-f','concat',
+                '-i', clips_file,
+                '-c','copy',
                 output_path,
             ]
 
