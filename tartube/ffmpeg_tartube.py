@@ -1069,19 +1069,42 @@ class FFmpegOptionsManager(object):
             opt_list.append(source_thumb_path)
 
         # H.264
-        if output_mode == 'h264':
+             if output_mode == 'h264':
+            enc = options_dict['gpu_encoding']
+           if enc == 'libx264':
+                # --- existing x264 path ---
+                opt_list += ['-c:v', 'libx264',
+                             '-preset', options_dict['patience_preset']]
+                if options_dict['hw_accel'] != 'none':
+                    opt_list += ['-hwaccel', options_dict['hw_accel']]
+                # … preserve all the existing tuning_list, -tune, -x264-params,
+                # profile/level, faststart, audio, two-pass, etc.
 
-            # In the original code, this was marked:
-            #   Only necessary if the output filename does not end with .mp4
-            opt_list.append('-c:v')
-            opt_list.append(options_dict['gpu_encoding'])
+            elif enc.endswith('_qsv'):
+                # --- QSV path ---
+                # force hardware accel first
+                opt_list += ['-hwaccel', 'qsv',
+                             '-c:v', enc]
+                # map x264 presets → QSV presets
+                qsv_map = {
+                    'ultrafast':'performance','superfast':'performance',
+                    'veryfast':'balanced','fast':'balanced','medium':'balanced',
+                    'slow':'quality','slower':'quality','veryslow':'quality'
+                }
+                qp = qsv_map.get(options_dict['patience_preset'], 'default')
+                opt_list += ['-preset', qp]
+                # copy audio, but drop all x264-only flags
+                if input_mode == 'video' and options_dict['audio_flag']:
+                    opt_list += ['-c:a','aac','-b:a',
+                                 str(options_dict['audio_bitrate'])+'k']
+                # (You can later expose QSV-specific look_ahead, async_depth here)
 
-            opt_list.append('-preset')
-            opt_list.append(options_dict['patience_preset'])
-
-            if options_dict['hw_accel'] != 'none':
-                opt_list.append('-hwaccel')
-                opt_list.append(options_dict['hw_accel'])
+            else:
+                # any other encoder (e.g. libx265, NVENC, AMF…)
+                opt_list += ['-c:v', enc,
+                             '-preset', options_dict['patience_preset']]
+                if options_dict['hw_accel'] != 'none':
+                    opt_list += ['-hwaccel', options_dict['hw_accel']]
 
             if options_dict['tuning_film_flag']:
                 tuning_list.append('film')
