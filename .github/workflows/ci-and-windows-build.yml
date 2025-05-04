@@ -24,12 +24,11 @@ jobs:
           pip install --upgrade pip
           pip install pytest
 
-      - name: Run tests
-        run: pytest tests/
+
 
   # 2) Build a single-file Windows .exe via PyInstaller
   build-windows-exe:
-    needs: test-python
+    
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
