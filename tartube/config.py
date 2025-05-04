@@ -11715,7 +11715,7 @@ class FFmpegOptionsEditWin(GenericEditWin):
 
         combo_list3 = [
             'libx264', 'libx265', 'h264_amf', 'hevc_amf', 'h264_nvenc',
-            'hevc_nvenc',
+            'hevc_nvenc', 'h264_qsv','hevc_qsv',
         ]
 
         self.gpu_encoding_combo = self.add_combo(grid,
